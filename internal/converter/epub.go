@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/benjaminkitt/shape-up-downloader/internal/downloader"
@@ -39,20 +38,12 @@ func (e *EPUBConverter) Convert(chapters []downloader.Chapter, css string) error
 	book.SetDescription("Stop Running in Circles and Ship Work that Matters")
 	book.SetLang("en")
 
-	// Add CSS
-	encodedCSS := url.QueryEscape(css)
-	cssDataURL := "data:text/css," + encodedCSS
-	cssPath, err := book.AddCSS(cssDataURL, "styles.css")
-	if err != nil {
-		return fmt.Errorf("failed to add CSS: %w", err)
-	}
-
 	// Add title page as first section
 	titlePage, err := e.createTitlePage()
 	if err != nil {
 		return fmt.Errorf("failed to create title page: %w", err)
 	}
-	_, err = book.AddSection(titlePage, "Title Page", "", cssPath)
+	_, err = book.AddSection(titlePage, "Title Page", "", "")
 	if err != nil {
 		return fmt.Errorf("failed to add title page: %w", err)
 	}
@@ -68,18 +59,22 @@ func (e *EPUBConverter) Convert(chapters []downloader.Chapter, css string) error
 		return fmt.Errorf("failed to extract TOC: %w", err)
 	}
 
+	cleanToc := cleanHTML(tocHTML)
+
 	// Add TOC as second section
-	_, err = book.AddSection(tocHTML, "Table of Contents", "", cssPath)
+	_, err = book.AddSection(cleanToc, "Table of Contents", "", "")
 	if err != nil {
 		return fmt.Errorf("failed to add TOC: %w", err)
 	}
 
 	// Process chapters
 	for _, chapter := range chapters {
-		cleanContent, err := e.processChapterContent(chapter.Content)
+		processedContent, err := e.processChapterContent(chapter.Content)
 		if err != nil {
 			return fmt.Errorf("failed to process chapter %s: %w", chapter.Title, err)
 		}
+
+		cleanContent := cleanHTML(processedContent)
 
 		// Parse content for image processing
 		doc, err := html.Parse(strings.NewReader(cleanContent))
@@ -102,7 +97,7 @@ func (e *EPUBConverter) Convert(chapters []downloader.Chapter, css string) error
 		}
 
 		// Add processed chapter to epub
-		_, err = book.AddSection(buf.String(), chapter.Title, "", cssPath)
+		_, err = book.AddSection(buf.String(), chapter.Title, "", "")
 		if err != nil {
 			return fmt.Errorf("failed to add chapter %s: %w", chapter.Title, err)
 		}
@@ -160,10 +155,7 @@ func findChapterNumberByURL(href string, chapters []downloader.Chapter) int {
 	fullURL := "https://basecamp.com" + href
 
 	for _, chapter := range chapters {
-		// fmt.Printf("fullURL: %s\n", fullURL)
-		// fmt.Printf("chapter.URL: %s\n", chapter.URL)
 		if chapter.URL == fullURL {
-			fmt.Printf("Found chapter nummber: %d\n", chapter.Number)
 			return chapter.Number + 2 // Account for title page and TOC
 		}
 	}
@@ -190,4 +182,33 @@ func (e *EPUBConverter) extractTOC(doc *html.Node, chapters []downloader.Chapter
 	}
 
 	return buf.String(), nil
+}
+
+func cleanHTML(content string) string {
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return content
+	}
+
+	var clean func(*html.Node)
+	clean = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			// Remove data- attributes
+			newAttrs := []html.Attribute{}
+			for _, attr := range n.Attr {
+				if !strings.HasPrefix(attr.Key, "data-") {
+					newAttrs = append(newAttrs, attr)
+				}
+			}
+			n.Attr = newAttrs
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			clean(c)
+		}
+	}
+	clean(doc)
+
+	var buf strings.Builder
+	html.Render(&buf, doc)
+	return buf.String()
 }
