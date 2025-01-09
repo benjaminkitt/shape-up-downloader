@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"gihub.com/benjaminkitt/shape-up-downloader/internal/downloader"
+	"github.com/benjaminkitt/shape-up-downloader/internal/downloader"
 )
 
 func TestHTMLConverter_Convert(t *testing.T) {

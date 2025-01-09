@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"gihub.com/benjaminkitt/shape-up-downloader/internal/converter"
-	"gihub.com/benjaminkitt/shape-up-downloader/internal/downloader"
+	"github.com/benjaminkitt/shape-up-downloader/internal/converter"
+	"github.com/benjaminkitt/shape-up-downloader/internal/downloader"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +58,7 @@ func main() {
 			// Download each chapter
 			for i, chapter := range chapters {
 				fmt.Printf("Downloading chapter %d/%d: %s\n", i+1, len(chapters), chapter.Title)
-				ch, err := dl.FetchChapter(chapter.URL)
+				ch, err := dl.FetchChapter(chapter)
 				if err != nil {
 					return fmt.Errorf("failed to fetch chapter %s: %w", chapter.Title, err)
 				}
@@ -66,10 +66,16 @@ func main() {
 			}
 
 			// Convert to requested format
-			if outputFormat == "html" {
+			switch outputFormat {
+			case "html":
 				conv := converter.NewHTMLConverter(outputDir)
 				if err := conv.Convert(chapters, chapters[0].CSS); err != nil {
 					return fmt.Errorf("failed to convert to HTML: %w", err)
+				}
+			case "epub":
+				conv := converter.NewEPUBConverter(outputDir)
+				if err := conv.Convert(chapters, chapters[0].CSS); err != nil {
+					return fmt.Errorf("failed to convert to EPUB: %w", err)
 				}
 			}
 

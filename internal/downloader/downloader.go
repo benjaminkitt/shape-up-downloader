@@ -34,6 +34,7 @@ type Chapter struct {
 	Content  string
 	CSS      string
 	Sections []Section
+	Number   int
 }
 
 type Section struct {
@@ -95,6 +96,7 @@ func (d *Downloader) FetchTOC() ([]Chapter, error) {
 	d.mainCSS = mainCSS
 
 	var chapters []Chapter
+	chapterNumber := 1 // Start with 2 for the first chapter as index 1 will be the TOC
 
 	// Find the main TOC container
 	tocDiv := findNode(doc, func(n *html.Node) bool {
@@ -114,10 +116,12 @@ func (d *Downloader) FetchTOC() ([]Chapter, error) {
 			!strings.Contains(getAttr(n, "href"), "#") {
 			href := getAttr(n, "href")
 			chapter := Chapter{
-				Title: extractText(n),
-				URL:   "https://basecamp.com" + href,
+				Title:  extractText(n),
+				URL:    "https://basecamp.com" + href,
+				Number: chapterNumber, // Set the chapter number
 			}
 			chapters = append(chapters, chapter)
+			chapterNumber++ // Increment for next chapter
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -135,8 +139,8 @@ func (d *Downloader) FetchTOC() ([]Chapter, error) {
 }
 
 // Update FetchChapter to combine both CSS sources
-func (d *Downloader) FetchChapter(url string) (*Chapter, error) {
-	resp, err := d.client.Get(url)
+func (d *Downloader) FetchChapter(chapter Chapter) (*Chapter, error) {
+	resp, err := d.client.Get(chapter.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chapter: %w", err)
 	}
@@ -145,10 +149,6 @@ func (d *Downloader) FetchChapter(url string) (*Chapter, error) {
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse chapter HTML: %w", err)
-	}
-
-	chapter := &Chapter{
-		URL: url,
 	}
 
 	// Fetch CSS
@@ -186,7 +186,13 @@ func (d *Downloader) FetchChapter(url string) (*Chapter, error) {
 	html.Render(&content, mainContent)
 	chapter.Content = content.String()
 
-	return chapter, nil
+	return &Chapter{
+		URL:     chapter.URL,
+		Title:   chapter.Title,
+		Content: content.String(),
+		CSS:     css,
+		Number:  chapter.Number, // Preserve the chapter number
+	}, nil
 }
 
 // Helper function to check node classes
