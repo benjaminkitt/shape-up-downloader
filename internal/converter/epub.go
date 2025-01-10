@@ -59,7 +59,10 @@ func (e *EPUBConverter) Convert(chapters []downloader.Chapter, css string) error
 		return fmt.Errorf("failed to extract TOC: %w", err)
 	}
 
-	cleanToc := cleanHTML(tocHTML)
+	cleanToc, err := cleanHTML(tocHTML)
+	if err != nil {
+		return fmt.Errorf("failed to clean HTML: %w", err)
+	}
 
 	// Add TOC as second section
 	_, err = book.AddSection(cleanToc, "Table of Contents", "", "")
@@ -74,7 +77,10 @@ func (e *EPUBConverter) Convert(chapters []downloader.Chapter, css string) error
 			return fmt.Errorf("failed to process chapter %s: %w", chapter.Title, err)
 		}
 
-		cleanContent := cleanHTML(processedContent)
+		cleanContent, err := cleanHTML(processedContent)
+		if err != nil {
+			return fmt.Errorf("failed to clean HTML: %w", err)
+		}
 
 		// Parse content for image processing
 		doc, err := html.Parse(strings.NewReader(cleanContent))
@@ -184,10 +190,10 @@ func (e *EPUBConverter) extractTOC(doc *html.Node, chapters []downloader.Chapter
 	return buf.String(), nil
 }
 
-func cleanHTML(content string) string {
+func cleanHTML(content string) (string, error) {
 	doc, err := html.Parse(strings.NewReader(content))
 	if err != nil {
-		return content
+		return "", fmt.Errorf("failed to parse content: %w", err)
 	}
 
 	var clean func(*html.Node)
@@ -209,6 +215,8 @@ func cleanHTML(content string) string {
 	clean(doc)
 
 	var buf strings.Builder
-	html.Render(&buf, doc)
-	return buf.String()
+	if err := html.Render(&buf, doc); err != nil {
+		return "", fmt.Errorf("failed to render document: %w", err)
+	}
+	return buf.String(), nil
 }

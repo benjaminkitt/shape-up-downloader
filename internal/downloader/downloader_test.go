@@ -7,7 +7,12 @@ import (
 
 func TestDownloader_FetchChapter(t *testing.T) {
 	d := New()
-	chapter, err := d.FetchChapter("https://basecamp.com/shapeup/1.1-chapter-02")
+	testChapter := Chapter{
+		URL:    "https://basecamp.com/shapeup/1.1-chapter-02",
+		Number: 5, // Example chapter number
+	}
+
+	chapter, err := d.FetchChapter(testChapter)
 
 	if err != nil {
 		t.Fatalf("Failed to fetch chapter: %v", err)
@@ -24,6 +29,10 @@ func TestDownloader_FetchChapter(t *testing.T) {
 	if chapter.CSS == "" {
 		t.Error("CSS content is empty")
 	}
+
+	if chapter.Number != 5 {
+		t.Errorf("Chapter number not preserved, got %d want %d", chapter.Number, 5)
+	}
 }
 
 func TestDownloader_FetchTOC(t *testing.T) {
@@ -39,15 +48,16 @@ func TestDownloader_FetchTOC(t *testing.T) {
 		t.Error("No chapters found in TOC")
 	}
 
-	// Test specific known chapters
+	// Test specific known chapters and their numbers
 	expectedChapters := []struct {
 		title   string
 		urlPart string
+		number  int
 	}{
-		{"Foreword by Jason Fried", "0.1-foreword"},
-		{"Introduction", "0.3-chapter-01"},
-		{"Principles of Shaping", "1.1-chapter-02"},
-		{"About the Author", "4.6-appendix-07"},
+		{"Foreword by Jason Fried", "0.1-foreword", 1},
+		{"Introduction", "0.3-chapter-01", 3},
+		{"Principles of Shaping", "1.1-chapter-02", 4},
+		{"About the Author", "4.6-appendix-07", len(chapters)},
 	}
 
 	for _, expected := range expectedChapters {
@@ -56,6 +66,9 @@ func TestDownloader_FetchTOC(t *testing.T) {
 			if strings.Contains(chapter.Title, expected.title) &&
 				strings.Contains(chapter.URL, expected.urlPart) {
 				found = true
+				if chapter.Number == 0 {
+					t.Errorf("Chapter %s has no number assigned", chapter.Title)
+				}
 				break
 			}
 		}
@@ -65,20 +78,21 @@ func TestDownloader_FetchTOC(t *testing.T) {
 		}
 	}
 }
+
 func TestDownloader_FetchDifferentChapterTypes(t *testing.T) {
 	testCases := []struct {
-		name string
-		url  string
+		name    string
+		chapter Chapter
 	}{
-		{"Preamble", "https://basecamp.com/shapeup/0.1-foreword"},
-		{"MainChapter", "https://basecamp.com/shapeup/1.1-chapter-02"},
-		{"Appendix", "https://basecamp.com/shapeup/4.1-appendix-02"},
+		{"Preamble", Chapter{URL: "https://basecamp.com/shapeup/0.1-foreword", Number: 1}},
+		{"MainChapter", Chapter{URL: "https://basecamp.com/shapeup/1.1-chapter-02", Number: 4}},
+		{"Appendix", Chapter{URL: "https://basecamp.com/shapeup/4.1-appendix-02", Number: 20}},
 	}
 
 	d := New()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			chapter, err := d.FetchChapter(tc.url)
+			chapter, err := d.FetchChapter(tc.chapter)
 			if err != nil {
 				t.Fatalf("Failed to fetch %s: %v", tc.name, err)
 			}
@@ -89,6 +103,31 @@ func TestDownloader_FetchDifferentChapterTypes(t *testing.T) {
 
 			if chapter.Content == "" {
 				t.Error("Chapter content is empty")
+			}
+
+			if chapter.Number != tc.chapter.Number {
+				t.Errorf("Chapter number not preserved, got %d want %d",
+					chapter.Number, tc.chapter.Number)
+			}
+		})
+	}
+}
+
+func TestDownloader_FetchChapter_Errors(t *testing.T) {
+	d := New()
+	testCases := []struct {
+		name    string
+		chapter Chapter
+	}{
+		{"Invalid URL", Chapter{URL: "https://invalid.url/chapter"}},
+		{"Non-existent chapter", Chapter{URL: "https://basecamp.com/shapeup/not-a-chapter"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := d.FetchChapter(tc.chapter)
+			if err == nil {
+				t.Error("Expected error but got nil")
 			}
 		})
 	}

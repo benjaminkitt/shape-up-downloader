@@ -146,6 +146,10 @@ func (d *Downloader) FetchChapter(chapter Chapter) (*Chapter, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("chapter not found: HTTP %d", resp.StatusCode)
+	}
+
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse chapter HTML: %w", err)
@@ -156,7 +160,6 @@ func (d *Downloader) FetchChapter(chapter Chapter) (*Chapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch CSS: %w", err)
 	}
-	chapter.CSS = css
 
 	// Find main content
 	mainContent := findNode(doc, func(n *html.Node) bool {
@@ -183,8 +186,9 @@ func (d *Downloader) FetchChapter(chapter Chapter) (*Chapter, error) {
 
 	// Convert main content to string
 	var content strings.Builder
-	html.Render(&content, mainContent)
-	chapter.Content = content.String()
+	if err := html.Render(&content, mainContent); err != nil {
+		return nil, fmt.Errorf("failed to render content: %w", err)
+	}
 
 	return &Chapter{
 		URL:     chapter.URL,
