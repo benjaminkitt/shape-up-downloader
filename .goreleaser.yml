@@ -1,0 +1,42 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: shape-up
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch
+
+brews:
+  - name: shape-up
+    homepage: "https://github.com/benjaminkitt/shape-up-downloader"
+    description: "Download and convert Basecamp's Shape Up book for e-readers"
+    tap:
+      owner: benjaminkitt
+      name: homebrew-tap
+    install: |
+      bin.install "shape-up"
