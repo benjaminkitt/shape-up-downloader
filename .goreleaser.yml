@@ -32,10 +32,10 @@ changelog:
       - Merge branch
 
 brews:
-  - name: shape-up
+  - name: shape-up-downloader
     homepage: "https://github.com/benjaminkitt/shape-up-downloader"
     description: "Download and convert Basecamp's Shape Up book for e-readers"
-    tap:
+    repository:
       owner: benjaminkitt
       name: homebrew-tap
     install: |
