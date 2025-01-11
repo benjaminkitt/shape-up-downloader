@@ -24,6 +24,13 @@ brew install benjaminkitt/tap/shape-up-downloader
 ### Download Binary
 Download the latest release for your platform from our [releases page](https://github.com/benjaminkitt/shape-up-downloader/releases).
 
+### Using Nix
+If you have Nix with flakes enabled, you can install directly with:
+
+```bash
+nix profile install github:benjaminkitt/shape-up-downloader
+```
+
 ### Build from Source
 If you have Go installed:
 ```bash

@@ -1,5 +1,5 @@
 {
-  description = "Shape Up book downloader development environment";
+  description = "Shape Up book downloader";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -12,6 +12,15 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
+        # Package definition
+        packages.default = pkgs.buildGoModule {
+          pname = "shape-up-downloader";
+          version = "1.0.0";
+          src = ./.;
+          vendorHash = null;
+        };
+
+        # Development environment (your existing config)
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             go
