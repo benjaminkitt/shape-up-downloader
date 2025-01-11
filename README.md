@@ -29,11 +29,6 @@ scoop bucket add shape-up https://github.com/benjaminkitt/scoop-bucket
 scoop install shape-up-downloader
 ```
 
-Using Chocolatey:
-```bash
-choco install shape-up-downloader
-```
-
 ### Download Binary
 Download the latest release for your platform from our [releases page](https://github.com/benjaminkitt/shape-up-downloader/releases).
 

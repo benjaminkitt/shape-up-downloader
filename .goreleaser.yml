@@ -45,21 +45,6 @@ scoops:
   - repository:
       owner: benjaminkitt
       name: scoop-bucket
-    folder: bucket
     description: "Download and convert Basecamp's Shape Up book for e-readers"
     homepage: "https://github.com/benjaminkitt/shape-up-downloader"
     license: MIT
-
-chocolateys:
-  - name: shape-up-downloader
-    authors: Benjamin Kitt
-    project_url: "https://github.com/benjaminkitt/shape-up-downloader"
-    license_url: "https://github.com/benjaminkitt/shape-up-downloader/blob/main/LICENSE"
-    project_source_url: "https://github.com/benjaminkitt/shape-up-downloader"
-    docs_url: "https://github.com/benjaminkitt/shape-up-downloader#readme"
-    bug_tracker_url: "https://github.com/benjaminkitt/shape-up-downloader/issues"
-    tags: "cli downloader ebook epub"
-    summary: "Download and convert Shape Up book for e-readers"
-    description: |
-      A command-line tool to download Basecamp's Shape Up book and convert it
-      to formats suitable for e-readers and offline reading.
